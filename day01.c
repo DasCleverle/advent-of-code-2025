@@ -1,24 +1,17 @@
+#include "lib/aoc.h"
+
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <strings.h>
 
-void get_password() {
-    FILE* f = fopen("day01.txt", "r");
-
-    if (f == NULL) {
-        printf("Error opening file\n");
-        exit(1);
-        return;
-    }
-
+void part1(FILE* const file) {
     int num_hit_0 = 0;
     int dial = 50;
 
     char direction;
     int count;
 
-    while (fscanf(f, "%c%d\n", &direction, &count) == 2) {
+    while (fscanf(file, "%c%d\n", &direction, &count) == 2) {
         printf("%d -> %c%d -> ", dial, direction, count);
 
         if (direction == 'R') {
@@ -45,28 +38,16 @@ void get_password() {
     }
 
     printf("%d\n", num_hit_0);
-
-    fclose(f);
 }
 
-void get_password_2() {
-    FILE* f = fopen("day01.txt", "r");
-
-    if (f == NULL) {
-        printf("Error opening file\n");
-        exit(1);
-        return;
-    }
-
+void part2(FILE* const file) {
     int num_hit_0 = 0;
     int dial = 50;
 
     char direction;
     int count;
 
-    while (fscanf(f, "%c%d\n", &direction, &count) == 2) {
-        int dial_prev = dial;
-
+    while (fscanf(file, "%c%d\n", &direction, &count) == 2) {
         if (direction == 'R') {
             for (int i = 0; i < count; i++) {
                 dial++;
@@ -96,10 +77,8 @@ void get_password_2() {
     }
 
     printf("%d\n", num_hit_0);
-
-    fclose(f);
 }
 
-int main() {
-    get_password_2();
+int main(int argc, char const* const* const argv) {
+    run(argc, argv, part1, part2);
 }
