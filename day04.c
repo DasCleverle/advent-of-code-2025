@@ -1,10 +1,16 @@
 #include "lib/aoc.h"
 #include "lib/list.h"
 
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#define EMPTY 0
+#define OCCUPIED 1
+#define MARKED 2
+#define REMOVED 3
 
 typedef struct Storage {
     char** data;
@@ -12,7 +18,7 @@ typedef struct Storage {
     int32_t col_count;
 } Storage;
 
-Storage get_rows(FILE* const file) {
+Storage parse(FILE* const file) {
     char line[256];
 
     List row_list = new_list();
@@ -55,6 +61,41 @@ Storage get_rows(FILE* const file) {
     return storage;
 }
 
+char get_at(Storage const* const storage, int32_t const x, int32_t const y) {
+    return storage->data[y][x];
+}
+
+void set_at(Storage* storage, int32_t const x, int32_t const y, char const value) {
+    storage->data[y][x] = value;
+}
+
+void print_storage(Storage const* const storage) {
+    for (int32_t y = 0; y < storage->row_count; y++) {
+        for (int32_t x = 0; x < storage->col_count; x++) {
+            char c;
+
+            if (storage->data[y][x] == EMPTY) {
+                c = '.';
+            }
+            else if (storage->data[y][x] == OCCUPIED) {
+                c = '@';
+            }
+            else if (storage->data[y][x] == MARKED) {
+                c = 'm';
+            }
+            else if (storage->data[y][x] == REMOVED) {
+                c = 'x';
+            }
+
+            printf("%c", c);
+        }
+
+        printf("\n");
+    }
+
+    printf("\n");
+}
+
 void free_storage(Storage* storage) {
     for (int32_t i = 0; i < storage->row_count; i++) {
         free(storage->data[i]);
@@ -81,7 +122,9 @@ size_t get_neighbour_count(Storage const* const storage, int32_t const x, int32_
                 continue;
             }
 
-            if (storage->data[check_y][check_x] == 1) {
+            char state = get_at(storage, check_x, check_y);
+
+            if (state == OCCUPIED || state == MARKED) {
                 neighbour_count++;
             }
         }
@@ -91,13 +134,14 @@ size_t get_neighbour_count(Storage const* const storage, int32_t const x, int32_
 }
 
 void part1(FILE* const file) {
-    Storage storage = get_rows(file);
+    Storage storage = parse(file);
 
     size_t accessible_count = 0;
 
     for (int32_t y = 0; y < storage.row_count; y++) {
         for (int32_t x = 0; x < storage.col_count; x++) {
-            if (storage.data[y][x] == 0) {
+
+            if (get_at(&storage, x, y) == EMPTY) {
                 continue;
             }
 
@@ -114,7 +158,64 @@ void part1(FILE* const file) {
     free_storage(&storage);
 }
 
-void part2(FILE* const) {}
+size_t clear_accessible(Storage* storage) {
+    size_t removed_count = 0;
+    size_t marked_count = 0;
+
+    for (int32_t y = 0; y < storage->row_count; y++) {
+        for (int32_t x = 0; x < storage->col_count; x++) {
+            char state = get_at(storage, x, y);
+
+            if (state == EMPTY || state == REMOVED) {
+                continue;
+            }
+
+            size_t neighbour_count = get_neighbour_count(storage, x, y);
+
+            if (neighbour_count < 4) {
+                set_at(storage, x, y, MARKED);
+                marked_count++;
+            }
+        }
+    }
+
+    if (marked_count == 0) {
+        return 0;
+    }
+
+    for (int32_t y = 0; y < storage->row_count; y++) {
+        for (int32_t x = 0; x < storage->col_count; x++) {
+            char state = get_at(storage, x, y);
+
+            if (state != MARKED) {
+                continue;
+            }
+
+            set_at(storage, x, y, REMOVED);
+            removed_count++;
+        }
+    }
+
+    return removed_count;
+}
+
+void part2(FILE* const file) {
+    Storage storage = parse(file);
+
+    print_storage(&storage);
+
+    size_t total = 0;
+    size_t removed_count = 0;
+
+    do {
+        removed_count = clear_accessible(&storage);
+        total += removed_count;
+    } while (removed_count > 0);
+
+    printf("%lu\n", total);
+
+    free_storage(&storage);
+}
 
 int main(int argc, char const* const* const argv) {
     run(argc, argv, part1, part2);
