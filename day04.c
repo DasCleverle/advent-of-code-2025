@@ -72,7 +72,7 @@ void set_at(Storage* storage, int32_t const x, int32_t const y, char const value
 void print_storage(Storage const* const storage) {
     for (int32_t y = 0; y < storage->row_count; y++) {
         for (int32_t x = 0; x < storage->col_count; x++) {
-            char c;
+            char c = ' ';
 
             if (storage->data[y][x] == EMPTY) {
                 c = '.';
