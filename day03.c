@@ -93,6 +93,7 @@ size_t get_number(char* line, size_t start_index, size_t length, int digit_index
     // printf("%ssearch_space: %s\n", spaces, search_space);
 
     size_t largest_digit = 0;
+    size_t largest_digit_index = 0;
     size_t result = 0;
 
     for (size_t i = start_index; i < length - (size_t)digit_index + 1; i++) {
@@ -103,17 +104,16 @@ size_t get_number(char* line, size_t start_index, size_t length, int digit_index
         }
 
         largest_digit = digit;
+        largest_digit_index = i;
 
         // printf("%slargest: %d\n", spaces, largest_digit);
+    }
 
-        if (i == length - 1) {
-            result = largest_digit * (size_t)pow(10, digit_index - 1);
-            break;
-        }
-
-        // printf("\n");
-
-        size_t next = get_number(line, i + 1, length, digit_index - 1);
+    if (largest_digit_index == length - 1) {
+        result = largest_digit * (size_t)pow(10, digit_index - 1);
+    }
+    else {
+        size_t next = get_number(line, largest_digit_index + 1, length, digit_index - 1);
         size_t new_result = largest_digit * (size_t)pow(10, digit_index - 1) + next;
 
         if (new_result > result) {
@@ -121,6 +121,8 @@ size_t get_number(char* line, size_t start_index, size_t length, int digit_index
             result = new_result;
         }
     }
+
+    // printf("\n");
 
     // printf("\n");
     return result;
