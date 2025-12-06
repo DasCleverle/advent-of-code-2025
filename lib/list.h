@@ -9,7 +9,7 @@ typedef struct Node {
 } Node;
 
 typedef struct {
-    int length;
+    size_t length;
     Node* head;
     Node* tail;
 } List;
