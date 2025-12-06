@@ -16,7 +16,9 @@ typedef struct {
 
 List new_list();
 void delete_list(List* list, char free_values);
+void* list_get(List* list, size_t index);
 
 Node* new_node();
 void append(List* list, Node* node);
+void append_value(List* list, void* value);
 void copy_to(List* list, void* array[]);

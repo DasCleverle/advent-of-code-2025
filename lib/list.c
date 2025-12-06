@@ -49,6 +49,27 @@ void append(List* list, Node* node) {
     }
 }
 
+void append_value(List* list, void* value) {
+    Node* node = new_node();
+    node->value = value;
+
+    append(list, node);
+}
+
+void* list_get(List* list, size_t index) {
+    if (index >= list->length) {
+        return NULL;
+    }
+
+    Node* curr = list->head;
+
+    for (size_t i = 0; i < index; i++) {
+        curr = curr->next;
+    }
+
+    return curr->value;
+}
+
 void copy_to(List* list, void* array[]) {
     Node* curr = list->head;
     int i = 0;
