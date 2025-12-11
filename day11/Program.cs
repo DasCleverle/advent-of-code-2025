@@ -1,4 +1,21 @@
-﻿Graph ParseGraph(string input) {
+﻿if (args.Length != 2) {
+    Console.Error.WriteLine("Requires 2 arguments");
+    Environment.Exit(1);
+}
+
+var input = await File.ReadAllTextAsync(args[1]);
+
+switch (args[0]) {
+    case "1":
+        Part1(input);
+        break;
+
+    case "2":
+        Part2(input);
+        break;
+}
+
+static Graph ParseGraph(string input) {
     var lines = input.Split(Environment.NewLine);
     var nodes = new Dictionary<string, Node>();
 
@@ -28,15 +45,12 @@
 
     }
 
-    var graph = new Graph {
-        Nodes = nodes.Values,
-        StartNode = nodes["you"]
-    };
+    var graph = new Graph { Nodes = nodes };
 
     return graph;
 }
 
-int SearchPaths(Node node, HashSet<Node> visited, Dictionary<string, int> cache) {
+static int SearchPathsPart1(Node node, HashSet<Node> visited, Dictionary<string, int> cache) {
     if (node.Name == "out") {
         return 1;
     }
@@ -52,7 +66,7 @@ int SearchPaths(Node node, HashSet<Node> visited, Dictionary<string, int> cache)
     var result = 0;
 
     foreach (var neighbor in node.Neighbors) {
-        var count = SearchPaths(neighbor, visited, cache);
+        var count = SearchPathsPart1(neighbor, visited, cache);
         result += count;
     }
 
@@ -60,37 +74,56 @@ int SearchPaths(Node node, HashSet<Node> visited, Dictionary<string, int> cache)
     return result;
 }
 
-void Part1(string input) {
+static void Part1(string input) {
     var graph = ParseGraph(input);
-    var paths = SearchPaths(graph.StartNode, new HashSet<Node>(), new Dictionary<string, int>());
+    var paths = SearchPathsPart1(graph.Nodes["you"], [], new Dictionary<string, int>());
 
     Console.WriteLine(paths);
 }
 
-void Part2(string input) { }
+static ulong SearchPathsPart2(Node node, HashSet<Part2Key> visited, HashSet<string> currentPath, Dictionary<Part2Key, ulong> cache) {
+    var passedFft = currentPath.Contains("fft");
+    var passedDac = currentPath.Contains("dac");
+    var key = new Part2Key(node.Name, passedFft, passedDac);
 
-if (args.Length != 2) {
-    Console.Error.WriteLine("Requires 2 arguments");
-    Environment.Exit(1);
+    if (node.Name == "out") {
+        return passedDac && passedFft ? 1UL : 0UL;
+    }
+
+    if (cache.TryGetValue(key, out var cached)) {
+        return cached;
+    }
+
+    if (!visited.Add(key)) {
+        return 0;
+    }
+
+    var total = 0UL;
+
+    foreach (var neighbor in node.Neighbors) {
+        currentPath.Add(neighbor.Name);
+        var result = SearchPathsPart2(neighbor, visited, currentPath, cache);
+        total += result;
+
+        currentPath.Remove(neighbor.Name);
+    }
+
+    cache[key] = total;
+    return total;
 }
 
-var input = await File.ReadAllTextAsync(args[1]);
+static void Part2(string input) {
+    var graph = ParseGraph(input);
+    var paths = SearchPathsPart2(graph.Nodes["svr"], [], ["svr"],  new Dictionary<Part2Key, ulong>());
 
-switch (args[0]) {
-    case "1":
-        Part1(input);
-        break;
-
-    case "2":
-        Part2(input);
-        break;
+    Console.WriteLine(paths);
 }
+
+public readonly record struct Part2Key(string Name, bool PassedFft, bool PassedDac);
 
 public class Graph {
 
-    public required IReadOnlyCollection<Node> Nodes { get; init; }
-
-    public required Node StartNode { get; init; }
+    public required Dictionary<string, Node> Nodes { get; init; }
 
 }
 
