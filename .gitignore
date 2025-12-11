@@ -1,4 +1,11 @@
+.idea/
 input/
 target/
+bin/
+obj/
+*.DotSettings.user
+
 day*
 !day*.c
+!day*/
+!*.csproj
