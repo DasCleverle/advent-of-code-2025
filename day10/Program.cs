@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Text;
 using System.Text.RegularExpressions;
+using Google.OrTools.LinearSolver;
 
 if (args.Length != 2) {
     Console.Error.WriteLine("Requires 2 arguments");
@@ -58,9 +59,17 @@ static List<Panel> ParseInput(string input) {
             buttonMasks.Add(mask);
         }
 
+        var joltageMatches = Regexes.JoltageRe.Matches(line[openingBrace..]);
+        var joltages = new int[joltageMatches.Count];
+
+        for (var i = 0; i < joltages.Length; i++) {
+            joltages[i] = int.Parse(joltageMatches[i].Groups[1].Value);
+        }
+
         var panel = new Panel {
             TargetMask = targetMask,
             Buttons = buttonMasks,
+            TargetJoltages = joltages
         };
 
         panels.Add(panel);
@@ -108,13 +117,56 @@ static void Part1(string input) {
     Console.WriteLine(total);
 }
 
-static void Part2(string input) { }
+static void Part2(string input) {
+    var panels = ParseInput(input);
+    var total = 0d;
+
+    foreach (var panel in panels) {
+        using var solver = Solver.CreateSolver("CBC_MIXED_INTEGER_PROGRAMMING");
+
+        var target = panel.TargetJoltages;
+        var matrix = panel.Buttons
+            .Select(x => x.GetBinaryVector())
+            .ToArray();
+
+        var dimension = target.Length;
+        var width = matrix.Length;
+
+        var coefficients = new Variable[matrix.Length];
+        for (var i = 0; i < width; i++) {
+            coefficients[i] = solver.MakeIntVar(0, double.MaxValue, ((char)((byte)'a' + i)).ToString());
+        }
+
+        for (var d = 0; d < dimension; d++) {
+            var expressions = new LinearExpr[width];
+
+            for (var i = 0; i < width; i++) {
+                expressions[i] = matrix[i][d] * coefficients[i];
+            }
+
+            solver.Add(expressions.Sum() == target[d]);
+        }
+
+        solver.Minimize(coefficients.Sum());
+
+        var status = solver.Solve();
+
+        if (status == Solver.ResultStatus.OPTIMAL) {
+            var solution = solver.Objective().Value();
+            total += solution;
+        }
+    }
+
+    Console.WriteLine(total);
+}
 
 public class Panel {
 
     public Mask TargetMask { get; init; }
 
     public List<Mask> Buttons { get; init; } = [];
+
+    public int[] TargetJoltages { get; init; } = [];
 
 }
 
@@ -129,6 +181,17 @@ public readonly struct Mask : IEquatable<Mask> {
     public ulong Bits { get; }
 
     public int Length { get; }
+
+    public int[] GetBinaryVector() {
+        var vector = new int[Length];
+
+        for (var i = 0; i < Length; i++) {
+            var value = (Bits & (1UL << Length - 1 - i)) != 0 ? 1 : 0;
+            vector[i] = value;
+        }
+
+        return vector;
+    }
 
     public static Mask operator |(Mask mask, ulong l) {
         return new Mask(mask.Bits | l, mask.Length);
@@ -177,8 +240,10 @@ public readonly struct Mask : IEquatable<Mask> {
     }
 }
 
-
-public partial class Regexes {
+public static partial class Regexes {
     [GeneratedRegex(@"(\d+)[,)]")]
     public static partial Regex ButtonIndexRe { get; }
+
+    [GeneratedRegex(@"(\d+)[,}]")]
+    public static partial Regex JoltageRe { get; }
 }
